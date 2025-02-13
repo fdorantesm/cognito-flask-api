@@ -3,7 +3,7 @@ import os
 import re
 from flask import Blueprint, Flask, json, make_response, request, jsonify
 from dotenv import load_dotenv
-from lib.cognito import client, hash
+from vendors.cognito import client, hash
 
 
 load_dotenv()
@@ -12,7 +12,7 @@ CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
 
 app = Flask(__name__)
-port = os.getenv('PORT') or 3000
+port = os.getenv('PORT') or 8080
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -326,4 +326,4 @@ def users():
     
 app.register_blueprint(api)
 
-app.run(host="0.0.0.0", port=9001, debug=True)
+app.run(host="0.0.0.0", port=port, debug=True)
