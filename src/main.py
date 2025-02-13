@@ -12,7 +12,7 @@ CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
 
 app = Flask(__name__)
-port = os.getenv('PORT')
+port = os.getenv('PORT') or 3000
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
