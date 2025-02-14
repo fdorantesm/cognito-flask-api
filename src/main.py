@@ -6,7 +6,12 @@ from dotenv import load_dotenv
 from vendors.cognito import client, hash
 
 
-load_dotenv()
+env = os.path.join(os.path.dirname(os.getcwd()), '.env')
+
+if os.path.exists(env):
+    load_dotenv(dotenv_path=env)
+else:
+    load_dotenv()
 
 CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
@@ -46,8 +51,9 @@ def register():
     data = request.get_json()
     username = data['username']
     password = data['password']
+    phone = data['phone']
     last_password_change = ""
-    scopes = {
+    terms = {
         'payments': False,
     }
     
@@ -57,12 +63,16 @@ def register():
             'Value': username
         },
         {
+            'Name': 'phone_number',
+            'Value': phone
+        },
+        {
             'Name': 'custom:last_password_change',
             'Value': str(last_password_change)
         },
         {
-            'Name': 'custom:scopes',
-            'Value': json.dumps(scopes)
+            'Name': 'custom:terms',
+            'Value': json.dumps(terms)
         }
     ]
     
@@ -88,6 +98,10 @@ def register():
                     'Name': 'email_verified',
                     'Value': 'true'
                 },
+                {
+                    'Name': 'phone_number_verified',
+                    'Value': 'true'
+                }
             ]
         )
         
@@ -148,7 +162,7 @@ def me():
         return jsonify({
             'data': {
                 'username': response['UserAttributes'][0]['Value'],
-                'scopes': json.loads(response['UserAttributes'][2]['Value']),
+                'terms': json.loads(response['UserAttributes'][2]['Value']),
                 'last_password_change': response['UserAttributes'][3]['Value']
             }
         })
@@ -156,12 +170,6 @@ def me():
         return make_response(jsonify({
             'message': 'Invalid token'
         }), 401)
-
-@api.route('/auth/privacy-policy', methods=['POST'])
-def privacy_policy():
-    return jsonify({
-        'message': 'Ok'
-    })
     
 @api.route('/auth/send-password-recovery-link', methods=['POST'])
 def send_password_recovery_link():
@@ -198,6 +206,42 @@ def send_password_recovery_link():
         return make_response(jsonify({
             'message': 'Limit exceeded'
         }), 429)
+    except Exception as e:
+        return make_response(jsonify({
+            'message': str(e)
+        }), 500)
+    
+@api.route('/auth/reset-password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    username = data['username']
+    password = data['password']
+    code = data['code']
+    
+    try:
+        response = client.confirm_forgot_password(
+            ClientId=os.getenv('COGNITO_CLIENT_ID'),
+            Username=username,
+            ConfirmationCode=code,
+            Password=password,
+            SecretHash=hash(username, CLIENT_ID, CLIENT_SECRET),
+        )
+        
+        return jsonify({
+            'message': 'Password changed'
+        })
+    except client.exceptions.CodeMismatchException as e:
+        return make_response(jsonify({
+            'message': 'Invalid code'
+        }), 400)
+    except client.exceptions.ExpiredCodeException as e:
+        return make_response(jsonify({
+            'message': 'Expired code'
+        }), 400)
+    except client.exceptions.UserNotFoundException as e:
+        return make_response(jsonify({
+            'message': 'User not found'
+        }), 404)
     except Exception as e:
         return make_response(jsonify({
             'message': str(e)
@@ -326,4 +370,4 @@ def users():
     
 app.register_blueprint(api)
 
-app.run(host="0.0.0.0", port=port, debug=True)
+app.run(host="0.0.0.0", port=port, debug=os.getenv('DEBUG') or False)
