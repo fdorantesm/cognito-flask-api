@@ -68,7 +68,7 @@ def register():
         },
         {
             'Name': 'custom:last_password_change',
-            'Value': str(last_password_change)
+            'Value': last_password_change
         },
         {
             'Name': 'custom:terms',
@@ -87,7 +87,7 @@ def register():
         
         client.admin_confirm_sign_up(
             UserPoolId=os.getenv('COGNITO_POOL_ID'),
-            Username=username
+            Username=username,
         )
         
         client.admin_update_user_attributes(
@@ -339,10 +339,12 @@ def reset():
         )
         
         for user in response['Users']:
-            client.admin_delete_user(
-                UserPoolId=os.getenv('COGNITO_POOL_ID'),
-                Username=user['Username']
-            )
+            email = next(attr['Value'] for attr in user['Attributes'] if attr['Name'] == 'email')
+            if re.search(r'@example\.com$', email):
+                client.admin_delete_user(
+                    UserPoolId=os.getenv('COGNITO_POOL_ID'),
+                    Username=user['Username']
+                )
         
         return jsonify({
             'message': 'Ok'
@@ -370,4 +372,4 @@ def users():
     
 app.register_blueprint(api)
 
-app.run(host="0.0.0.0", port=port, debug=os.getenv('DEBUG') or False)
+app.run(host="0.0.0.0", port=port, debug=os.getenv('DEBUG') == 'true' or False)
