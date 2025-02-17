@@ -4,6 +4,7 @@ import re
 from flask import Blueprint, Flask, json, make_response, request, jsonify
 from dotenv import load_dotenv
 from vendors.cognito import client, hash
+from flask_cors import CORS  # new import
 
 
 env = os.path.join(os.getcwd(), '.env')
@@ -12,13 +13,15 @@ if os.path.exists(env):
     load_dotenv(dotenv_path=env)
 else:
     load_dotenv()
-    
+
+print(json.dumps(dict(os.environ), indent=2))
     
 DEBUG = os.getenv('DEBUG') == 'true' or False
 CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
 
 app = Flask(__name__)
+CORS(app)  # enable CORS globally
 port = os.getenv('PORT') or 8080
 
 api = Blueprint('api', __name__, url_prefix='/api')
@@ -368,9 +371,10 @@ def users():
         })
 
     except Exception as e:
-        return jsonify({
+        print(e)
+        return make_response(jsonify({
             'message': e.response['Error']['Message']
-        })
+        }), 500)
     
 app.register_blueprint(api)
 app.run(host="0.0.0.0", port=port, debug=DEBUG)
