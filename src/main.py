@@ -6,13 +6,15 @@ from dotenv import load_dotenv
 from vendors.cognito import client, hash
 
 
-env = os.path.join(os.path.dirname(os.getcwd()), '.env')
+env = os.path.join(os.getcwd(), '.env')
 
 if os.path.exists(env):
     load_dotenv(dotenv_path=env)
 else:
     load_dotenv()
-
+    
+    
+DEBUG = os.getenv('DEBUG') == 'true' or False
 CLIENT_ID = os.getenv('COGNITO_CLIENT_ID')
 CLIENT_SECRET = os.getenv('COGNITO_CLIENT_SECRET')
 
@@ -340,7 +342,7 @@ def reset():
         
         for user in response['Users']:
             email = next(attr['Value'] for attr in user['Attributes'] if attr['Name'] == 'email')
-            if re.search(r'@example\.com$', email):
+            if re.search(r'@maildrop\.cc$', email):
                 client.admin_delete_user(
                     UserPoolId=os.getenv('COGNITO_POOL_ID'),
                     Username=user['Username']
@@ -371,5 +373,4 @@ def users():
         })
     
 app.register_blueprint(api)
-
-app.run(host="0.0.0.0", port=port, debug=os.getenv('DEBUG') == 'true' or False)
+app.run(host="0.0.0.0", port=port, debug=DEBUG)
