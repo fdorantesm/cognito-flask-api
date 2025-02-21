@@ -1,0 +1,17 @@
+meta {
+  name: Register
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{HOST}}/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "fernando.dorantes+2@kodevox.com"
+  }
+}
